@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>RetailRocket MVP — Рекомендации</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        /* Простейшие стили, чтобы страница не была ужасно небрежной */
+        body {
+          font-family: Arial, sans-serif;
+          margin: 20px;
+          padding: 0;
+          background-color: #f9f9f9;
+        }
+        h1 {
+          font-size: 24px;
+          margin-bottom: 10px;
+        }
+        label {
+          display: inline-block;
+          margin-top: 10px;
+          margin-bottom: 5px;
+        }
+        input[type="number"], select, button {
+          padding: 6px 8px;
+          font-size: 14px;
+          margin-right: 10px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+        }
+        button {
+          cursor: pointer;
+          background-color: #4CAF50;
+          color: white;
+          border: none;
+        }
+        button:hover {
+          background-color: #45a049;
+        }
+        #result {
+          margin-top: 20px;
+        }
+        table {
+          border-collapse: collapse;
+          width: 100%;
+          max-width: 600px;
+          background: white;
+          box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+        th, td {
+          border: 1px solid #ddd;
+          padding: 8px;
+          text-align: left;
+        }
+        th {
+          background-color: #f2f2f2;
+        }
+        .error {
+          color: red;
+          margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<h1>Рекомендации товаров</h1>
+
+<!-- Поле ввода user_id -->
+<label for="userIdInput">User ID:</label>
+<input type="number" id="userIdInput" min="1" placeholder="Введите ID пользователя" />
+
+<!-- Селектор top_k -->
+<label for="topKSelect">Top K:</label>
+<select id="topKSelect">
+    <!-- Можно перечислить несколько вариантов -->
+    <option value="5">5</option>
+    <option value="10" selected>10</option>
+    <option value="20">20</option>
+    <option value="50">50</option>
+</select>
+
+<!-- Кнопка «Получить рекомендации» -->
+<button id="fetchBtn">Получить</button>
+
+<!-- Блок для ошибок -->
+<div id="errorMsg" class="error"></div>
+
+<!-- Блок, куда мы вставим таблицу с результатами -->
+<div id="result"></div>
+
+<script>
+    (function() {
+      const userIdInput = document.getElementById("userIdInput");
+      const topKSelect = document.getElementById("topKSelect");
+      const fetchBtn = document.getElementById("fetchBtn");
+      const resultDiv = document.getElementById("result");
+      const errorDiv = document.getElementById("errorMsg");
+
+      // Функция для превращения JS-объекта в HTML-таблицу
+      function renderTable(data) {
+        if (!Array.isArray(data) || data.length === 0) {
+          return "<p>Нечего показать.</p>";
+        }
+        let html = "<table>";
+        html += "<tr><th>User ID</th><th>Item ID</th><th>Score</th></tr>";
+        data.forEach(item => {
+          html += `<tr>
+                     <td>${item.user_id}</td>
+                     <td>${item.item_id}</td>
+                     <td>${item.score.toFixed(6)}</td>
+                   </tr>`;
+        });
+        html += "</table>";
+        return html;
+      }
+
+      // Функция для обращения к API
+      async function fetchRecommendations() {
+        errorDiv.textContent = "";       // Сбросить предыдущие ошибки
+        resultDiv.innerHTML = "";        // Очистить старые результаты
+
+        const userId = userIdInput.value.trim();
+        const topK = topKSelect.value;
+
+        if (!userId) {
+          errorDiv.textContent = "Пожалуйста, введите корректный User ID.";
+          return;
+        }
+
+        // Составляем URL
+        const url = `/recommendations/${encodeURIComponent(userId)}?top_k=${encodeURIComponent(topK)}`;
+
+        try {
+          const resp = await fetch(url);
+          if (!resp.ok) {
+            // Если статус не 2xx, отобразим сообщение об ошибке
+            const error = await resp.json().catch(() => null);
+            const msg = error?.detail || `Ошибка ${resp.status}`;
+            errorDiv.textContent = msg;
+            return;
+          }
+          const json = await resp.json();
+          // Рендерим полученные рекомендации
+          resultDiv.innerHTML = renderTable(json);
+        } catch (e) {
+          console.error(e);
+          errorDiv.textContent = "Не удалось получить данные. Проверьте консоль разработчика.";
+        }
+      }
+
+      // Вешаем событие на кнопку
+      fetchBtn.addEventListener("click", fetchRecommendations);
+
+      // Также можно реагировать на Enter в поле userIdInput
+      userIdInput.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          fetchRecommendations();
+        }
+      });
+    })();
+</script>
+</body>
+</html>

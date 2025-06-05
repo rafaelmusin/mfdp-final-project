@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: retailrocket_mvp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://app:secret@db:5432/retailrocket_mvp
+      DEV_MODE: "true"       # В режиме разработки ставим "true", чтобы видеть --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+    working_dir: /app
+    command: >
+      bash -c "
+        # При первом запуске можно раскомментировать populate_db, 
+        # а в дальнейшем закомментировать, чтобы не грузить CSV каждый раз.
+        # python -u scripts/populate_db.py &&
+        if [ \"$${DEV_MODE}\" = \"true\" ]; then
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload;
+        else
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2;
+        fi
+      "
+
+volumes:
+  postgres_data:
