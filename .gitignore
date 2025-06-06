@@ -177,4 +177,5 @@ cython_debug/
 *.pptx
 *.csv
 *.zip
-/homework_5/catboost_info
+homework_6/my_mvp_project/notebooks/catboost_info/
+

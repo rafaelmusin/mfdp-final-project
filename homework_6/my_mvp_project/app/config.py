@@ -11,7 +11,8 @@ if not database_url:
     )
 
 # 2) Путь к файлу модели рекомендаций (можно переопределить через ENV)
-model_path = os.getenv("MODEL_PATH", "app/recommend/models/model.pkl")
+# Фактическое расположение модели: app/recommend/model.pkl
+model_path = os.getenv("MODEL_PATH", "app/recommend/model.pkl")
 
 # 3) Флаг режима разработки (True/False), читаем из ENV, по умолчанию True
 _dev_mode = os.getenv("DEV_MODE", "true").lower()
