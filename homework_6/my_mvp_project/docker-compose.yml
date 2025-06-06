@@ -1,12 +1,11 @@
-# docker-compose.yml
 services:
   db:
     image: postgres:15
     restart: always
     environment:
-      POSTGRES_USER: "${POSTGRES_USER}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
-      POSTGRES_DB: "${POSTGRES_DB}"
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: retailrocket_mvp
     ports:
       - "5432:5432"
     volumes:
@@ -16,19 +15,19 @@ services:
     build: .
     depends_on:
       - db
-    env_file:
-      - .env
     environment:
-      DATABASE_URL: "${DATABASE_URL}"
-      DEV_MODE: "${DEV_MODE}"
+      DATABASE_URL: postgresql://app:secret@db:5432/retailrocket_mvp
+      DEV_MODE: "true"       # В режиме разработки ставим "true", чтобы видеть --reload
     ports:
       - "8000:8000"
     volumes:
       - ./:/app
+    working_dir: /app
     command: >
       bash -c "
+        # При первом запуске можно раскомментировать populate_db, 
+        # а в дальнейшем закомментировать, чтобы не грузить CSV каждый раз.
         # python -u scripts/populate_db.py &&
-
         if [ \"$${DEV_MODE}\" = \"true\" ]; then
           uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload;
         else

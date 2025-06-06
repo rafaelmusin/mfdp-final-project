@@ -5,7 +5,6 @@ from pathlib import Path
 
 _MODEL_PATH = Path(__file__).parent / "model.pkl"
 
-
 def load_model():
     """
     Пытаемся загрузить сериализованный CatBoost (или любую другую) модель.
