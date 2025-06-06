@@ -2,6 +2,7 @@
 
 from datetime import datetime
 
+
 def test_create_and_read_event(client):
     # Нужно сначала создать user и item
     user_resp = client.post("/users/", json={})
@@ -39,6 +40,7 @@ def test_create_and_read_event(client):
     single = single_resp.json()
     assert single["id"] == evt["id"]
 
+
 def test_create_event_invalid_user_or_item(client):
     # Случай: несуществующий user
     now_iso = datetime.utcnow().isoformat()
@@ -64,6 +66,7 @@ def test_create_event_invalid_user_or_item(client):
         }
     resp2 = client.post("/events/", json=payload2)
     assert resp2.status_code == 400
+
 
 def test_get_nonexistent_event(client):
     resp = client.get("/events/9999")

@@ -29,6 +29,7 @@ def test_create_and_read_category(client):
     assert single["id"] == child["id"]
     assert single["parent_id"] == created["id"]
 
+
 def test_get_nonexistent_category(client):
     resp = client.get("/categories/9999")
     assert resp.status_code == 404

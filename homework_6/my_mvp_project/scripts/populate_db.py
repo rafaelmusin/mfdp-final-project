@@ -7,6 +7,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import SessionLocal, engine, Base
@@ -22,7 +23,9 @@ def create_schema_with_retry(retries: int = 5, delay: int = 2):
             print("[populate_db] Схема базы готова.")
             return
         except OperationalError:
-            print(f"[populate_db] DB не готова (попытка {attempt}/{retries}), через {delay} сек...")
+            print(
+                f"[populate_db] DB не готова (попытка {attempt}/{retries}), через {delay} сек..."
+            )
             time.sleep(delay)
     raise Exception("[populate_db] Не удалось создать схему БД!")
 
@@ -81,7 +84,7 @@ def load_categories(session: Session, path_csv: str):
             # значит есть «висящие» связи (циклические или неверные parent_id)
             raise RuntimeError(
                 "[populate_db] Ошибка при загрузке категорий: обнаружены категории с отсутствующими родителями."
-                )
+            )
 
         session.commit()
         inserted_ids.update(inserted_this_round)
@@ -89,7 +92,7 @@ def load_categories(session: Session, path_csv: str):
         print(
             f"[populate_db]  → Рунд {round_num}: вставлено = {len(inserted_this_round)}, "
             f"осталось = {len(remaining)}"
-            )
+        )
         round_num += 1
 
     print("[populate_db] Категории загружены полностью.")
@@ -174,7 +177,7 @@ def load_item_properties(session: Session, paths: list[str]):
                         "item_id": int(iid),
                         "property": prop,
                         "value": val,
-                        }
+                    }
                     batch.append(mapping)
 
                 if len(batch) >= BATCH_SIZE:
@@ -213,7 +216,7 @@ def load_events(session: Session, path_csv: str):
                     "item_id": int(iid),
                     "event": ev,
                     "transaction_id": tx.strip() if tx and tx.strip() else None,
-                    }
+                }
                 batch.append(mapping)
 
             if len(batch) >= BATCH_SIZE:
@@ -241,13 +244,16 @@ def main():
         load_items_and_users(
             session,
             events_csv="data/events.csv",
-            item_props_csvs=["data/item_properties_part1.csv", "data/item_properties_part2.csv"],
-            )
+            item_props_csvs=[
+                "data/item_properties_part1.csv",
+                "data/item_properties_part2.csv",
+            ],
+        )
 
         load_item_properties(
             session,
             paths=["data/item_properties_part1.csv", "data/item_properties_part2.csv"],
-            )
+        )
 
         load_events(session, path_csv="data/events.csv")
 

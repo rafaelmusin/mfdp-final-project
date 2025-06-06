@@ -3,6 +3,7 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, Field
+from app.models import EventTypeEnum  # для валидации EventTypeEnum
 
 
 #
@@ -13,107 +14,131 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    id: Optional[int] = None
+    """
+    Схема для создания пользователя: ID генерируется СУБД автоматически, передавать ничего не нужно.
+    """
+
+    pass
 
 
 class UserRead(UserBase):
-    id: int
+    id: int = Field(..., example=1)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 #
 # Схемы для Items
 #
-class ItemBase(BaseModel):
-    id: Optional[int] = None
+class ItemCreate(BaseModel):
+    """
+    Схема для создания Item: ID генерируется СУБД автоматически, передавать ничего не нужно.
+    """
 
-
-class ItemCreate(ItemBase):
     pass
 
 
-class ItemRead(ItemBase):
-    id: int
+class ItemRead(BaseModel):
+    id: int = Field(..., example=42)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 #
 # Схемы для Categories
 #
-class CategoryBase(BaseModel):
-    parent_id: Optional[int] = None
+class CategoryCreate(BaseModel):
+    """
+    Схема для создания категории: передаём только parent_id (если нужно).
+    """
+
+    parent_id: Optional[int] = Field(None, example=0)
 
 
-class CategoryCreate(CategoryBase):
-    pass
-
-
-class CategoryRead(CategoryBase):
-    id: int
+class CategoryRead(BaseModel):
+    id: int = Field(..., example=1)
+    parent_id: Optional[int] = Field(None, example=0)
     # children теперь может быть либо списком CategoryRead, либо None
     children: Optional[List["CategoryRead"]] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 CategoryRead.update_forward_refs()
 
 
-#
-# Схемы для ItemProperty
-#
-class ItemPropertyBase(BaseModel):
-    timestamp: int
-    item_id: int
-    property: str
-    value: str
+# ------------------------------------------------------------
+#  Схемы для ItemProperty
+# ------------------------------------------------------------
+class ItemPropertyCreate(BaseModel):
+    """
+    Схема для создания ItemProperty:
+    - во входящем JSON поле называется `property`
+    """
+
+    timestamp: int = Field(..., example=1617181723)
+    item_id: int = Field(..., example=42)
+    property: str = Field(..., example="color")
+    value: str = Field(..., example="red")
 
 
-class ItemPropertyCreate(ItemPropertyBase):
-    pass
+class ItemPropertyRead(BaseModel):
+    """
+    Схема для чтения ItemProperty:
+    - возвращает id, timestamp, item_id, property и value
+    """
 
-
-class ItemPropertyRead(ItemPropertyBase):
-    id: int
+    id: int = Field(..., example=100)
+    timestamp: int = Field(..., example=1617181723)
+    item_id: int = Field(..., example=42)
+    property: str = Field(..., example="color")
+    value: str = Field(..., example="red")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 #
 # Схемы для Event
 #
 class EventBase(BaseModel):
-    user_id: int
-    item_id: int
-    event: str = Field(..., pattern="^view$|^addtocart$|^transaction$")
-    timestamp: datetime
+    user_id: int = Field(..., example=1)
+    item_id: int = Field(..., example=42)
+    event: EventTypeEnum = Field(
+        ..., description="Тип события: view / addtocart / transaction"
+    )
+    timestamp: datetime = Field(..., example="2025-06-05T14:48:00Z")
 
 
 class EventCreate(EventBase):
+    """
+    Схема для создания Event: передаём user_id, item_id, event, timestamp (BigInteger).
+    """
+
     pass
 
 
 class EventRead(EventBase):
-    id: int
-    datetime: datetime
+    id: int = Field(..., example=10)
+    created_at: datetime = Field(..., example="2025-06-05T14:48:00Z", alias="datetime")
 
-    class Config:
-        orm_mode = True
+
+class Config:
+    from_attributes = True
+    # Разрешаем возвращать поле под именем "datetime" в JSON, хотя внутри модели — created_at
+    allow_population_by_field_name = True
 
 
 #
 # Схемы для рекомендаций
 #
 class RecommendationResponse(BaseModel):
-    user_id: int
-    item_id: int
-    score: float
+    user_id: int = Field(..., example=1)
+    item_id: int = Field(..., example=42)
+    score: float = Field(..., example=0.75)
 
     class Config:
-        orm_mode = True
+        from_attributes = True

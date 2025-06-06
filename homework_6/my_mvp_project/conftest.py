@@ -1,4 +1,4 @@
-# файл: conftest.py   (должен лежать в корне проекта, рядом с папкой app/)
+# conftest.py
 
 import os
 import sys
@@ -17,7 +17,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool    # <–– вот он нам нужен
+from sqlalchemy.pool import StaticPool  # <–– вот он нам нужен
 
 import app.database as _database_module
 from app.database import Base, get_db
@@ -37,9 +37,11 @@ engine = create_engine(
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
     future=True,
-    )
+)
 
-TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+TestingSessionLocal = sessionmaker(
+    bind=engine, autoflush=False, autocommit=False, future=True
+)
 
 
 # ───────────────────────────────────────────────────────────────────────
@@ -50,6 +52,7 @@ TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=Fals
 _database_module.engine = engine
 _database_module.SessionLocal = TestingSessionLocal
 
+
 # ───────────────────────────────────────────────────────────────────────
 # 7) Новая функция-генератор get_db, которая отдаёт сессии из нашего TestingSessionLocal
 def override_get_db():
@@ -59,12 +62,14 @@ def override_get_db():
     finally:
         db.close()
 
+
 # ───────────────────────────────────────────────────────────────────────
 @pytest.fixture(scope="function", autouse=True)
 def prepare_database():
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
+
 
 @pytest.fixture
 def client():

@@ -19,6 +19,7 @@ def test_create_and_read_user(client):
     single = resp3.json()
     assert single["id"] == created["id"]
 
+
 def test_get_nonexistent_user(client):
     resp = client.get("/users/9999")
     assert resp.status_code == 404
