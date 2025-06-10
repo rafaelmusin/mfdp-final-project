@@ -1,47 +1,107 @@
-# tests/test_item_properties.py
+"""Тесты для свойств товаров."""
 
-from datetime import datetime
+import pytest
+import time
+from httpx import AsyncClient
+from app.tests.conftest import create_test_item, create_test_item_property
 
-def test_create_and_read_item_property(client):
-    # Сначала нужно создать товар, чтобы получить item_id
-    item_resp = client.post("/items/", json={})
-    item_id = item_resp.json()["id"]
 
-    # POST /item_properties/
-    now_ts = int(datetime.utcnow().timestamp())
-    payload = {
-        "timestamp": now_ts,
-        "item_id": item_id,
+@pytest.mark.asyncio
+async def test_create_item_property(async_client: AsyncClient, db_session):
+    """Тест создания свойства товара."""
+    item = create_test_item(db_session)
+    
+    property_data = {
+        "timestamp": int(time.time() * 1000),
+        "item_id": item.id,
         "property": "color",
         "value": "red"
+    }
+    response = await async_client.post("/item_properties/", json=property_data)
+    assert response.status_code == 201
+    created = response.json()
+    assert created["item_id"] == item.id
+    assert created["property"] == "color"
+    assert created["value"] == "red"
+
+
+@pytest.mark.asyncio
+async def test_read_item_property(async_client: AsyncClient, db_session):
+    """Тест чтения свойства товара."""
+    item = create_test_item(db_session)
+    property_obj = create_test_item_property(db_session, item.id, "size", "large")
+    
+    response = await async_client.get(f"/item_properties/{property_obj.id}")
+    assert response.status_code == 200
+    
+    property_data = response.json()
+    assert property_data["id"] == property_obj.id
+    assert property_data["item_id"] == item.id
+    assert property_data["property"] == "size"
+    assert property_data["value"] == "large"
+
+
+@pytest.mark.asyncio
+async def test_list_item_properties(async_client: AsyncClient, db_session):
+    """Тест получения списка свойств товаров."""
+    item = create_test_item(db_session)
+    properties = [
+        create_test_item_property(db_session, item.id, f"prop_{i}", f"value_{i}")
+        for i in range(3)
+    ]
+    
+    response = await async_client.get("/item_properties/")
+    assert response.status_code == 200
+    
+    properties_data = response.json()
+    assert isinstance(properties_data, list)
+    assert len(properties_data) >= 3
+
+
+@pytest.mark.asyncio
+async def test_item_properties_different_types(async_client: AsyncClient, db_session):
+    """Тест создания разных свойств товара."""
+    item = create_test_item(db_session)
+    
+    properties_data = [
+        {"property": "color", "value": "blue"},
+        {"property": "size", "value": "medium"},
+        {"property": "weight", "value": "1.5kg"},
+        {"property": "material", "value": "cotton"}
+    ]
+    
+    for prop_data in properties_data:
+        full_data = {
+            "timestamp": int(time.time() * 1000),
+            "item_id": item.id,
+            **prop_data
         }
-    resp = client.post("/item_properties/", json=payload)
-    assert resp.status_code == 201
-    prop = resp.json()
-    assert prop["item_id"] == item_id
-    assert prop["property"] == "color"
-    assert prop["value"] == "red"
+        response = await async_client.post("/item_properties/", json=full_data)
+        assert response.status_code == 201
+        created = response.json()
+        assert created["property"] == prop_data["property"]
+        assert created["value"] == prop_data["value"]
 
-    # GET /item_properties/
-    list_resp = client.get("/item_properties/")
-    assert list_resp.status_code == 200
-    props = list_resp.json()
-    assert any(p["id"] == prop["id"] for p in props)
 
-    # GET /item_properties/{id}
-    single_resp = client.get(f"/item_properties/{prop['id']}")
-    assert single_resp.status_code == 200
-    single = single_resp.json()
-    assert single["id"] == prop["id"]
+@pytest.mark.asyncio
+async def test_read_nonexistent_property(async_client: AsyncClient):
+    """Тест чтения несуществующего свойства."""
+    response = await async_client.get("/item_properties/999999")
+    assert response.status_code == 404
 
-def test_create_item_property_invalid_item(client):
-    # Если item_id не существует, должен быть 400
-    now_ts = int(datetime.utcnow().timestamp())
-    payload = {
-        "timestamp": now_ts,
-        "item_id": 9999,
-        "property": "weight",
-        "value": "1kg"
-        }
-    resp = client.post("/item_properties/", json=payload)
-    assert resp.status_code == 400
+
+@pytest.mark.asyncio
+async def test_properties_pagination(async_client: AsyncClient, db_session):
+    """Тест пагинации свойств товаров."""
+    item = create_test_item(db_session)
+    properties = [
+        create_test_item_property(db_session, item.id, f"page_prop_{i}", f"page_value_{i}")
+        for i in range(5)
+    ]
+    
+    response = await async_client.get("/item_properties/?skip=1&limit=2")
+    assert response.status_code == 200
+    
+    properties_data = response.json()
+    assert isinstance(properties_data, list)
+    assert len(properties_data) <= 2

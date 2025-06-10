@@ -1,39 +1,55 @@
+# Настройки Docker для запуска приложения
+# Запуск: docker compose up
+# Остановка: docker compose down
+
 services:
+  # База данных PostgreSQL
   db:
     image: postgres:15
     restart: always
-    environment:
-      POSTGRES_USER: app
-      POSTGRES_PASSWORD: secret
-      POSTGRES_DB: retailrocket_mvp
+    env_file:
+      - .env
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  # FastAPI приложение
   app:
     build: .
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgresql://app:secret@db:5432/retailrocket_mvp
-      DEV_MODE: "true"       # В режиме разработки ставим "true", чтобы видеть --reload
+      DEV_MODE: ${DEV_MODE:-true}
     ports:
       - "8000:8000"
     volumes:
       - ./:/app
     working_dir: /app
+    restart: on-failure
     command: >
       bash -c "
-        # При первом запуске можно раскомментировать populate_db, 
-        # а в дальнейшем закомментировать, чтобы не грузить CSV каждый раз.
+        # Для первоначального наполнения БД выполните команду:
+        # docker compose exec app python -u scripts/populate_db.py
+        # Или загрузить данные из CSV файлов прямо тут
         # python -u scripts/populate_db.py &&
-        if [ \"$${DEV_MODE}\" = \"true\" ]; then
+        if [ "$${DEV_MODE}" = "true" ]; then
+          # Режим разработки с автоперезагрузкой
           uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload;
         else
+          # Продакшен режим с несколькими воркерами
           uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2;
         fi
       "
 
+# Хранение данных
 volumes:
   postgres_data:

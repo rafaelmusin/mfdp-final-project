@@ -1,45 +1,56 @@
-# файл: app/database.py
+# app/database.py
+"""Настройка базы данных."""
 
 import os
+import asyncio
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
+import logging
 
-# 1) БЕЗ жёсткого fallback-а. Берём DATABASE_URL только из окружения.
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError(
-        "Переменная окружения DATABASE_URL не задана. "
-        "Задайте её, например, через docker-compose или в CI/CD."
-        )
+from app.common_utils import get_db_url
 
-# 2) Если это SQLite (в том числе in-memory), добавляем connect_args
-connect_args = {}
-if DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+logger = logging.getLogger(__name__)
 
-# 3) Создаём SQLAlchemy Engine
-engine = create_engine(
-    DATABASE_URL,
-    connect_args=connect_args,
-    future=True,    # рекомендуем использовать SQLAlchemy 2.0-режим
-    echo=False,     # при необходимости можно переключить в True для отладки
+# Настройка движка базы данных
+SQLALCHEMY_DATABASE_URL = get_db_url()
+
+# Создаем движок
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    # Для SQLite используем специальные настройки
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
+else:
+    # Для других БД (PostgreSQL, MySQL)
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
-# 4) SessionLocal — фабрика сессий (SQLAlchemy Session)
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
-    future=True,
-    )
+# Сессия для работы с БД
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# 5) Базовый класс для моделей
+# Базовый класс для моделей
 Base = declarative_base()
 
-# 6) Функция-зависимость для FastAPI
-def get_db():
+
+def get_db() -> Session:
+    """Создание сессии базы данных."""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+
+async def init_db():
+    """Инициализация базы данных."""
+    from app.models import User, Item, Category, Event, ItemProperty
+    
+    logger.info("Создание таблиц...")
+    Base.metadata.create_all(bind=engine)
+    logger.info("Таблицы созданы")
+    
+    # Задержка для стабилизации
+    await asyncio.sleep(1)

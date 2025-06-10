@@ -1,162 +1,179 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <title>RetailRocket MVP — Рекомендации</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        /* Простейшие стили, чтобы страница не была ужасно небрежной */
-        body {
-          font-family: Arial, sans-serif;
-          margin: 20px;
-          padding: 0;
-          background-color: #f9f9f9;
-        }
-        h1 {
-          font-size: 24px;
-          margin-bottom: 10px;
-        }
-        label {
-          display: inline-block;
-          margin-top: 10px;
-          margin-bottom: 5px;
-        }
-        input[type="number"], select, button {
-          padding: 6px 8px;
-          font-size: 14px;
-          margin-right: 10px;
-          border: 1px solid #ccc;
-          border-radius: 4px;
-        }
-        button {
-          cursor: pointer;
-          background-color: #4CAF50;
-          color: white;
-          border: none;
-        }
-        button:hover {
-          background-color: #45a049;
-        }
-        #result {
-          margin-top: 20px;
-        }
-        table {
-          border-collapse: collapse;
-          width: 100%;
-          max-width: 600px;
-          background: white;
-          box-shadow: 0 0 5px rgba(0,0,0,0.1);
-        }
-        th, td {
-          border: 1px solid #ddd;
-          padding: 8px;
-          text-align: left;
-        }
-        th {
-          background-color: #f2f2f2;
-        }
-        .error {
-          color: red;
-          margin-top: 10px;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель управления API</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script defer src="/static/script.js"></script>
 </head>
 <body>
-<h1>Рекомендации товаров</h1>
+    <h1>Панель управления рекомендательным сервисом</h1>
+    <main>
+        <!-- Дашборд аналитики -->
+        <section id="analytics-section" class="full-width">
+            <h2>📊 Аналитика системы</h2>
+            
+            <!-- Основная статистика -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="total-users">-</div>
+                        <div class="stat-label">Пользователей</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">🛍️</div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="total-items">-</div>
+                        <div class="stat-label">Товаров</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="total-events">-</div>
+                        <div class="stat-label">Событий</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">📂</div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="total-categories">-</div>
+                        <div class="stat-label">Категорий</div>
+                    </div>
+                </div>
+            </div>
 
-<!-- Поле ввода user_id -->
-<label for="userIdInput">User ID:</label>
-<input type="number" id="userIdInput" min="1" placeholder="Введите ID пользователя" />
+            <!-- Кнопка обновления -->
+            <button id="refresh-analytics-btn" class="refresh-btn">🔄 Обновить данные</button>
+        </section>
 
-<!-- Селектор top_k -->
-<label for="topKSelect">Top K:</label>
-<select id="topKSelect">
-    <!-- Можно перечислить несколько вариантов -->
-    <option value="5">5</option>
-    <option value="10" selected>10</option>
-    <option value="20">20</option>
-    <option value="50">50</option>
-</select>
+        <!-- Блок пользовательских действий - перемещен наверх -->
+        <section id="user-actions-section" class="full-width actions-section">
+            <div class="actions-grid">
+                <!-- Получить рекомендации -->
+                <div class="action-block">
+                    <h3>🎯 Получить рекомендации</h3>
+                    <p>Введите ID пользователя для получения персональных рекомендаций товаров на основе ML-модели.</p>
+                    <div class="input-group">
+                        <input type="number" id="user-id-recs" placeholder="Введите ID пользователя...">
+                        <button id="get-recs-btn">Получить</button>
+                    </div>
+                    <div class="results" id="recs-results">
+                        <p>Здесь будут результаты...</p>
+                    </div>
+                </div>
 
-<!-- Кнопка «Получить рекомендации» -->
-<button id="fetchBtn">Получить</button>
+                <!-- Создать пользователя -->
+                <div class="action-block">
+                    <h3>👤 Создать нового пользователя</h3>
+                    <p>Создайте нового пользователя в системе. ID будет присвоен автоматически, а данные сохранены в базе.</p>
+                    <div class="button-group">
+                        <button id="create-user-btn">Создать пользователя</button>
+                    </div>
+                    <div class="results" id="create-user-result">
+                         <p>Здесь будет результат...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-<!-- Блок для ошибок -->
-<div id="errorMsg" class="error"></div>
+        <!-- Каталог товаров -->
+        <section id="catalog-section" class="full-width">
+            <h2>🛒 Каталог товаров</h2>
+            
+            <!-- Поиск и фильтры -->
+            <div class="catalog-controls">
+                <div class="search-controls">
+                    <div class="search-group">
+                        <input type="text" id="catalog-search" placeholder="Поиск по ID товара или свойствам...">
+                        <button id="catalog-search-btn">🔍 Найти</button>
+                    </div>
+                    <div class="filter-group">
+                        <select id="catalog-category" class="category-select">
+                            <option value="">Все категории</option>
+                        </select>
+                        <button id="catalog-clear-btn">🗑️ Очистить</button>
+                    </div>
+                </div>
+            </div>
 
-<!-- Блок, куда мы вставим таблицу с результатами -->
-<div id="result"></div>
+            <!-- Результаты поиска -->
+            <div class="catalog-results">
+                <div class="catalog-header">
+                    <span id="catalog-count">Загрузка товаров...</span>
+                    <div class="view-controls">
+                        <button id="view-grid-btn" class="view-btn active">⊞ Сетка</button>
+                        <button id="view-list-btn" class="view-btn">☰ Список</button>
+                    </div>
+                </div>
+                
+                <!-- Товары -->
+                <div id="catalog-items" class="catalog-grid">
+                    <p>Загрузка товаров...</p>
+                </div>
+                
+                <!-- Пагинация -->
+                <div class="pagination">
+                    <button id="prev-page-btn" disabled>← Предыдущая</button>
+                    <span id="pagination-info">Страница 1</span>
+                    <button id="next-page-btn">Следующая →</button>
+                </div>
+            </div>
+        </section>
 
-<script>
-    (function() {
-      const userIdInput = document.getElementById("userIdInput");
-      const topKSelect = document.getElementById("topKSelect");
-      const fetchBtn = document.getElementById("fetchBtn");
-      const resultDiv = document.getElementById("result");
-      const errorDiv = document.getElementById("errorMsg");
+        <!-- Модальное окно для деталей товара -->
+        <div id="item-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-item-title">Детали товара</h3>
+                    <button class="modal-close" id="modal-close-btn">×</button>
+                </div>
+                <div class="modal-body" id="modal-item-details">
+                    <p>Загрузка...</p>
+                </div>
+                <div class="modal-footer">
+                    <button id="modal-view-btn" class="action-btn">👁️ Просмотреть</button>
+                    <button id="modal-cart-btn" class="action-btn">🛒 В корзину</button>
+                </div>
+            </div>
+        </div>
 
-      // Функция для превращения JS-объекта в HTML-таблицу
-      function renderTable(data) {
-        if (!Array.isArray(data) || data.length === 0) {
-          return "<p>Нечего показать.</p>";
-        }
-        let html = "<table>";
-        html += "<tr><th>User ID</th><th>Item ID</th><th>Score</th></tr>";
-        data.forEach(item => {
-          html += `<tr>
-                     <td>${item.user_id}</td>
-                     <td>${item.item_id}</td>
-                     <td>${item.score.toFixed(6)}</td>
-                   </tr>`;
-        });
-        html += "</table>";
-        return html;
-      }
+        <!-- Блок аналитических графиков -->
+        <section id="analytics-charts-section" class="full-width charts-section">
+            <div class="charts-grid">
+                <!-- Популярные товары -->
+                <div class="chart-block">
+                    <h3>🔥 Популярные товары</h3>
+                    <div class="chart-container">
+                        <div id="popular-items-chart" class="bar-chart"></div>
+                    </div>
+                </div>
 
-      // Функция для обращения к API
-      async function fetchRecommendations() {
-        errorDiv.textContent = "";       // Сбросить предыдущие ошибки
-        resultDiv.innerHTML = "";        // Очистить старые результаты
+                <!-- Активные пользователи -->
+                <div class="chart-block">
+                    <h3>⭐ Активные пользователи</h3>
+                    <div class="chart-container">
+                        <div id="active-users-chart" class="bar-chart"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-        const userId = userIdInput.value.trim();
-        const topK = topKSelect.value;
-
-        if (!userId) {
-          errorDiv.textContent = "Пожалуйста, введите корректный User ID.";
-          return;
-        }
-
-        // Составляем URL
-        const url = `/recommendations/${encodeURIComponent(userId)}?top_k=${encodeURIComponent(topK)}`;
-
-        try {
-          const resp = await fetch(url);
-          if (!resp.ok) {
-            // Если статус не 2xx, отобразим сообщение об ошибке
-            const error = await resp.json().catch(() => null);
-            const msg = error?.detail || `Ошибка ${resp.status}`;
-            errorDiv.textContent = msg;
-            return;
-          }
-          const json = await resp.json();
-          // Рендерим полученные рекомендации
-          resultDiv.innerHTML = renderTable(json);
-        } catch (e) {
-          console.error(e);
-          errorDiv.textContent = "Не удалось получить данные. Проверьте консоль разработчика.";
-        }
-      }
-
-      // Вешаем событие на кнопку
-      fetchBtn.addEventListener("click", fetchRecommendations);
-
-      // Также можно реагировать на Enter в поле userIdInput
-      userIdInput.addEventListener("keydown", function(e) {
-        if (e.key === "Enter") {
-          fetchRecommendations();
-        }
-      });
-    })();
-</script>
+        <!-- Последние события -->
+        <section id="recent-events-section" class="full-width">
+            <h2>📈 Последние события</h2>
+            <div class="events-container">
+                <div id="recent-events-list" class="events-list">
+                    <p>Загрузка событий...</p>
+                </div>
+            </div>
+        </section>
+    </main>
 </body>
 </html>

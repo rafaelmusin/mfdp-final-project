@@ -1,24 +1,68 @@
-# tests/test_users.py
+"""Тесты для пользователей."""
 
-def test_create_and_read_user(client):
-    # POST /users/ — создаём пользователя (без указания id)
-    response = client.post("/users/", json={})
+import pytest
+from httpx import AsyncClient
+from app.tests.conftest import create_test_user
+
+
+@pytest.mark.asyncio
+async def test_create_user(async_client: AsyncClient):
+    """Тест создания пользователя."""
+    response = await async_client.post("/users/", json={})
     assert response.status_code == 201
-    created = response.json()
-    assert "id" in created
+    user = response.json()
+    assert "id" in user
+    assert "created_at" in user
 
-    # GET /users/ — список
-    resp2 = client.get("/users/")
-    assert resp2.status_code == 200
-    users = resp2.json()
-    assert any(u["id"] == created["id"] for u in users)
 
-    # GET /users/{id}
-    resp3 = client.get(f"/users/{created['id']}")
-    assert resp3.status_code == 200
-    single = resp3.json()
-    assert single["id"] == created["id"]
+@pytest.mark.asyncio
+async def test_read_user(async_client: AsyncClient, db_session):
+    """Тест чтения пользователя."""
+    # Создаем пользователя через базу данных
+    test_user = create_test_user(db_session)
+    
+    # Запрашиваем пользователя через API
+    response = await async_client.get(f"/users/{test_user.id}")
+    assert response.status_code == 200
+    
+    user_data = response.json()
+    assert user_data["id"] == test_user.id
+    assert "created_at" in user_data
 
-def test_get_nonexistent_user(client):
-    resp = client.get("/users/9999")
-    assert resp.status_code == 404
+
+@pytest.mark.asyncio
+async def test_read_nonexistent_user(async_client: AsyncClient):
+    """Тест чтения несуществующего пользователя."""
+    response = await async_client.get("/users/999999")
+    assert response.status_code == 404
+    assert "не найден" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_list_users(async_client: AsyncClient, db_session):
+    """Тест получения списка пользователей."""
+    # Создаем несколько пользователей
+    users = [create_test_user(db_session) for _ in range(3)]
+    
+    # Запрашиваем список пользователей
+    response = await async_client.get("/users/")
+    assert response.status_code == 200
+    
+    users_data = response.json()
+    assert isinstance(users_data, list)
+    assert len(users_data) >= 3
+
+
+@pytest.mark.asyncio
+async def test_list_users_with_pagination(async_client: AsyncClient, db_session):
+    """Тест получения списка пользователей с пагинацией."""
+    # Создаем несколько пользователей
+    users = [create_test_user(db_session) for _ in range(5)]
+    
+    # Запрашиваем с пагинацией
+    response = await async_client.get("/users/?skip=1&limit=2")
+    assert response.status_code == 200
+    
+    users_data = response.json()
+    assert isinstance(users_data, list)
+    assert len(users_data) <= 2

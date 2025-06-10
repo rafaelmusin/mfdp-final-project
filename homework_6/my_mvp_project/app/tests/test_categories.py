@@ -1,34 +1,88 @@
-# tests/test_categories.py
+"""Тесты для категорий."""
 
-def test_create_and_read_category(client):
-    # POST /categories/ без parent_id
-    response = client.post("/categories/", json={})
+import pytest
+from httpx import AsyncClient
+from app.tests.conftest import create_test_category
+
+
+@pytest.mark.asyncio
+async def test_create_category(async_client: AsyncClient):
+    """Тест создания категории."""
+    category_data = {"name": "Test Category"}
+    response = await async_client.post("/categories/", json=category_data)
     assert response.status_code == 201
     created = response.json()
-    assert "id" in created
-    assert created.get("parent_id") is None
+    assert created["name"] == "Test Category"
 
-    # Создадим подкатегорию (parent_id = только что созданный)
-    response2 = client.post("/categories/", json={"parent_id": created["id"]})
-    assert response2.status_code == 201
-    child = response2.json()
-    assert child["parent_id"] == created["id"]
 
-    # GET /categories/
-    resp_list = client.get("/categories/")
-    assert resp_list.status_code == 200
-    cats = resp_list.json()
-    # Должны быть хотя бы две: родитель и ребёнок
-    assert any(c["id"] == created["id"] for c in cats)
-    assert any(c["id"] == child["id"] for c in cats)
+@pytest.mark.asyncio  
+async def test_read_category(async_client: AsyncClient, db_session):
+    """Тест чтения категории."""
+    test_category = create_test_category(db_session, "Read Test Category")
+    
+    response = await async_client.get(f"/categories/{test_category.id}")
+    assert response.status_code == 200
+    
+    category_data = response.json()
+    assert category_data["id"] == test_category.id
+    assert category_data["name"] == "Read Test Category"
 
-    # GET /categories/{id}
-    resp_single = client.get(f"/categories/{child['id']}")
-    assert resp_single.status_code == 200
-    single = resp_single.json()
-    assert single["id"] == child["id"]
-    assert single["parent_id"] == created["id"]
 
-def test_get_nonexistent_category(client):
-    resp = client.get("/categories/9999")
-    assert resp.status_code == 404
+@pytest.mark.asyncio
+async def test_list_categories(async_client: AsyncClient, db_session):
+    """Тест получения списка категорий."""
+    categories = [create_test_category(db_session, f"Category {i}") for i in range(3)]
+    
+    response = await async_client.get("/categories/")
+    assert response.status_code == 200
+    
+    categories_data = response.json()
+    assert isinstance(categories_data, list)
+    assert len(categories_data) >= 3
+
+
+@pytest.mark.asyncio
+async def test_create_category_with_parent(async_client: AsyncClient, db_session):
+    """Тест создания категории с родителем."""
+    parent_category = create_test_category(db_session, "Parent Category")
+    
+    child_data = {
+        "name": "Child Category",
+        "parent_id": parent_category.id
+    }
+    response = await async_client.post("/categories/", json=child_data)
+    assert response.status_code == 201
+    
+    child = response.json()
+    assert child["name"] == "Child Category"
+    assert child["parent_id"] == parent_category.id
+
+
+@pytest.mark.asyncio
+async def test_read_nonexistent_category(async_client: AsyncClient):
+    """Тест чтения несуществующей категории."""
+    response = await async_client.get("/categories/999999")
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_create_duplicate_category_name(async_client: AsyncClient, db_session):
+    """Тест создания категории с дублирующимся именем."""
+    create_test_category(db_session, "Duplicate Name")
+    
+    duplicate_data = {"name": "Duplicate Name"}
+    response = await async_client.post("/categories/", json=duplicate_data)
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_categories_pagination(async_client: AsyncClient, db_session):
+    """Тест пагинации категорий."""
+    categories = [create_test_category(db_session, f"Page Category {i}") for i in range(5)]
+    
+    response = await async_client.get("/categories/?skip=1&limit=2")
+    assert response.status_code == 200
+    
+    categories_data = response.json()
+    assert isinstance(categories_data, list)
+    assert len(categories_data) <= 2

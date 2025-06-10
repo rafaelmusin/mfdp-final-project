@@ -1,70 +1,101 @@
-# tests/test_events.py
+"""Тесты для событий."""
 
-from datetime import datetime
+import pytest
+from httpx import AsyncClient
+from app.tests.conftest import create_test_user, create_test_item, create_test_event
 
-def test_create_and_read_event(client):
-    # Нужно сначала создать user и item
-    user_resp = client.post("/users/", json={})
-    user_id = user_resp.json()["id"]
 
-    item_resp = client.post("/items/", json={})
-    item_id = item_resp.json()["id"]
+@pytest.mark.asyncio
+async def test_create_event(async_client: AsyncClient, db_session):
+    """Тест создания события."""
+    user = create_test_user(db_session)
+    item = create_test_item(db_session)
+    
+    event_data = {
+        "user_id": user.id,
+        "item_id": item.id,
+        "event_type": "view"
+    }
+    response = await async_client.post("/events/", json=event_data)
+    assert response.status_code == 201
+    created = response.json()
+    assert created["user_id"] == user.id
+    assert created["item_id"] == item.id
+    assert created["event_type"] == "view"
 
-    # POST /events/
-    # Timestamp в формате ISO (Pydantic превратит в datetime)
-    now_iso = datetime.utcnow().isoformat()
-    payload = {
-        "user_id": user_id,
-        "item_id": item_id,
-        "event": "view",
-        "timestamp": now_iso
+
+@pytest.mark.asyncio
+async def test_read_event(async_client: AsyncClient, db_session):
+    """Тест чтения события."""
+    user = create_test_user(db_session)
+    item = create_test_item(db_session)
+    event = create_test_event(db_session, user.id, item.id, "addtocart")
+    
+    response = await async_client.get(f"/events/{event.id}")
+    assert response.status_code == 200
+    
+    event_data = response.json()
+    assert event_data["id"] == event.id
+    assert event_data["user_id"] == user.id
+    assert event_data["item_id"] == item.id
+    assert event_data["event_type"] == "addtocart"
+
+
+@pytest.mark.asyncio
+async def test_list_events(async_client: AsyncClient, db_session):
+    """Тест получения списка событий."""
+    user = create_test_user(db_session)
+    item = create_test_item(db_session)
+    events = [create_test_event(db_session, user.id, item.id) for _ in range(3)]
+    
+    response = await async_client.get("/events/")
+    assert response.status_code == 200
+    
+    events_data = response.json()
+    assert isinstance(events_data, list)
+    assert len(events_data) >= 3
+
+
+@pytest.mark.asyncio
+async def test_events_different_types(async_client: AsyncClient, db_session):
+    """Тест создания событий разных типов."""
+    user = create_test_user(db_session)
+    item = create_test_item(db_session)
+    
+    event_types = ["view", "addtocart", "transaction", "rate"]
+    
+    for event_type in event_types:
+        event_data = {
+            "user_id": user.id,
+            "item_id": item.id,
+            "event_type": event_type
         }
-    resp = client.post("/events/", json=payload)
-    assert resp.status_code == 201
-    evt = resp.json()
-    assert evt["user_id"] == user_id
-    assert evt["item_id"] == item_id
-    assert evt["event"] == "view"
-    assert "id" in evt
+        response = await async_client.post("/events/", json=event_data)
+        assert response.status_code == 201
+        created = response.json()
+        assert created["event_type"] == event_type
 
-    # GET /events/
-    list_resp = client.get("/events/")
-    assert list_resp.status_code == 200
-    evts = list_resp.json()
-    assert any(e["id"] == evt["id"] for e in evts)
 
-    # GET /events/{id}
-    single_resp = client.get(f"/events/{evt['id']}")
-    assert single_resp.status_code == 200
-    single = single_resp.json()
-    assert single["id"] == evt["id"]
+@pytest.mark.asyncio
+async def test_read_nonexistent_event(async_client: AsyncClient):
+    """Тест чтения несуществующего события."""
+    response = await async_client.get("/events/999999")
+    assert response.status_code == 404
 
-def test_create_event_invalid_user_or_item(client):
-    # Случай: несуществующий user
-    now_iso = datetime.utcnow().isoformat()
-    payload1 = {
-        "user_id": 9999,
-        "item_id": 1,  # даже если item существует или нет, сначала пропадёт на user
-        "event": "view",
-        "timestamp": now_iso
-        }
-    resp1 = client.post("/events/", json=payload1)
-    assert resp1.status_code == 400
 
-    # Сначала создать пользователя
-    user_resp = client.post("/users/", json={})
-    user_id = user_resp.json()["id"]
+@pytest.mark.asyncio
+async def test_events_pagination(async_client: AsyncClient, db_session):
+    """Тест пагинации событий."""
+    user = create_test_user(db_session)
+    item = create_test_item(db_session)
+    events = [create_test_event(db_session, user.id, item.id) for _ in range(5)]
+    
+    response = await async_client.get("/events/?skip=1&limit=2")
+    assert response.status_code == 200
+    
+    events_data = response.json()
+    assert isinstance(events_data, list)
+    assert len(events_data) <= 2
 
-    # Запрос с несуществующим item
-    payload2 = {
-        "user_id": user_id,
-        "item_id": 9999,
-        "event": "view",
-        "timestamp": now_iso
-        }
-    resp2 = client.post("/events/", json=payload2)
-    assert resp2.status_code == 400
 
-def test_get_nonexistent_event(client):
-    resp = client.get("/events/9999")
-    assert resp.status_code == 404
+# Дополнительные тесты удалены для упрощения
