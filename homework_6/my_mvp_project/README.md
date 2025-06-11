@@ -276,59 +276,59 @@ docker compose exec app python -m pytest app/tests/test_recommendations.py
 
 ```
 my_mvp_project/
-├── app/                           # Основное приложение
-│   ├── __init__.py               # Пакет приложения
-│   ├── main.py                   # FastAPI приложение
-│   ├── database.py               # Настройки БД
-│   ├── models.py                 # SQLAlchemy модели
-│   ├── schemas.py                # Pydantic схемы
-│   ├── common_utils.py           # Общие утилиты
-│   ├── limiter.py                # Rate limiting
-│   ├── routers/                  # API эндпоинты
-│   │   ├── __init__.py           # Пакет роутеров
-│   │   ├── analytics.py          # Аналитика и метрики
-│   │   ├── catalog.py            # Каталог товаров
-│   │   ├── categories.py         # Управление категориями
-│   │   ├── crud.py               # CRUD операции
-│   │   ├── events.py             # События пользователей
-│   │   ├── item_properties.py    # Свойства товаров
-│   │   ├── items.py              # Управление товарами
-│   │   ├── recommendations.py    # ML рекомендации
-│   │   └── users.py              # Управление пользователями
-│   ├── recommend/                # Рекомендательная система
-│   │   ├── __init__.py           # Пакет рекомендаций
-│   │   ├── utils.py              # ML утилиты
-│   │   └── model.pkl             # Обученная CatBoost модель
-│   ├── static/                   # Веб-интерфейс
-│   │   ├── index.html            # Главная страница
-│   │   ├── style.css             # CSS стили
-│   │   └── script.js             # JavaScript логика
-│   └── tests/                    # Автотесты
-│       ├── __init__.py           # Пакет тестов
-│       ├── conftest.py           # Pytest конфигурация
-│       ├── test_api.py           # Тесты API
-│       ├── test_categories.py    # Тесты категорий
-│       ├── test_events.py        # Тесты событий
-│       ├── test_item_properties.py # Тесты свойств
-│       ├── test_items.py         # Тесты товаров
-│       ├── test_recommendations.py # Тесты рекомендаций
-│       └── test_users.py         # Тесты пользователей
-├── scripts/                      # Утилиты и скрипты
-│   └── populate_db.py            # Загрузка данных в БД
-├── notebooks/                    # ML эксперименты
-│   ├── model_training.ipynb      # Обучение модели
-│   └── catboost_info/            # Логи CatBoost
-├── data/                         # Исходные данные
-│   ├── category_tree.csv         # Дерево категорий
-│   ├── events.csv                # События пользователей
-│   ├── item_properties_part1.csv # Свойства товаров (часть 1)
-│   └── item_properties_part2.csv # Свойства товаров (часть 2)
-├── .env.example                  # Шаблон .env
-├── .gitignore                    # Git исключения
-├── docker-compose.yml            # Docker композиция
-├── Dockerfile                    # Docker образ
-├── requirements.txt              # Python зависимости
-└── README.md                     # Документация проекта
+├── app/                             # Основное приложение
+│   ├── __init__.py                  # Пакет приложения
+│   ├── main.py                      # FastAPI приложение
+│   ├── database.py                  # Настройки БД
+│   ├── models.py                    # SQLAlchemy модели
+│   ├── schemas.py                   # Pydantic схемы
+│   ├── common_utils.py              # Общие утилиты
+│   ├── limiter.py                   # Rate limiting
+│   ├── routers/                     # API эндпоинты
+│   │   ├── __init__.py              # Пакет роутеров
+│   │   ├── analytics.py             # Аналитика и метрики
+│   │   ├── catalog.py               # Каталог товаров
+│   │   ├── categories.py            # Управление категориями
+│   │   ├── crud.py                  # CRUD операции
+│   │   ├── events.py                # События пользователей
+│   │   ├── item_properties.py       # Свойства товаров
+│   │   ├── items.py                 # Управление товарами
+│   │   ├── recommendations.py       # ML рекомендации
+│   │   └── users.py                 # Управление пользователями
+│   ├── recommend/                   # Рекомендательная система
+│   │   ├── __init__.py              # Пакет рекомендаций
+│   │   ├── utils.py                 # ML утилиты
+│   │   └── model.pkl                # Обученная CatBoost модель
+│   ├── static/                      # Веб-интерфейс
+│   │   ├── index.html               # Главная страница
+│   │   ├── style.css                # CSS стили
+│   │   └── script.js                # JavaScript логика
+│   └── tests/                       # Автотесты
+│       ├── __init__.py              # Пакет тестов
+│       ├── conftest.py              # Pytest конфигурация
+│       ├── test_api.py              # Тесты API
+│       ├── test_categories.py       # Тесты категорий
+│       ├── test_events.py           # Тесты событий
+│       ├── test_item_properties.py  # Тесты свойств
+│       ├── test_items.py            # Тесты товаров
+│       ├── test_recommendations.py  # Тесты рекомендаций
+│       └── test_users.py            # Тесты пользователей
+├── scripts/                         # Утилиты и скрипты
+│   └── populate_db.py               # Загрузка данных в БД
+├── notebooks/                       # ML эксперименты
+│   ├── model_training.ipynb         # Обучение модели
+│   └── catboost_info/               # Логи CatBoost
+├── data/                            # Исходные данные
+│   ├── category_tree.csv            # Дерево категорий
+│   ├── events.csv                   # События пользователей
+│   ├── item_properties_part1.csv    # Свойства товаров (часть 1)
+│   └── item_properties_part2.csv    # Свойства товаров (часть 2)
+├── .env.example                     # Шаблон .env
+├── .gitignore                       # Git исключения
+├── docker-compose.yml               # Docker композиция
+├── Dockerfile                       # Docker образ
+├── requirements.txt                 # Python зависимости
+└── README.md                        # Документация проекта
 ```
 
 ### Локальная разработка
